@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html>
+<head> 
+<script src="https://d3js.org/d3.v5.min.js" charset="utf-8"></script>
+<meta charset="utf-8"/>
+
+<style>
+.pagebreak { page-break-before: always; }
+path {
+  stroke-width: 1;
+  fill: none;
+  stroke: #000;
+}
+.point {
+				fill:none;
+				size: 10px
+			}
+
+   body {
+        margin: 0;
+        overflow: hidden;
+      }
+      #tooltip {
+        font-size: 17px;
+        color: #3e3c38;
+	  }
+
+  #tooltip {
+       position: absolute;
+  		left: 450px;
+  		top: 40px;
+    }
+
+    #tooltip .left {
+      margin-right: 400px;
+    }
+
+    #tooltip .right {
+      margin-left: 15px;
+	}
+ #button {
+       position: absolute;
+  		left: 70px;
+  		top: 60px;
+    }
+		
+</style>
+</head>
+<div>
+    <div class="heatmap"></div>
+    <div id="tooltip"></div>
+
+    <select id="button"></select>
+    <svg id="svg"width="1000" height="800"></svg>
+  </div>
+<body>
+
+<script>
+
+var margin = { left:100, right:50, top:88, bottom:105 },
+    		   height = 500 - margin.top - margin.bottom, 
+   		       width = 900 - margin.left - margin.right;
+		
+		var svg = d3.select('svg').append("svg")
+    				.attr("width", width + margin.left + margin.right)
+    				.attr("height", height + margin.top + margin.bottom);
+
+		//var width = +svg.attr('width');
+		//var height = +svg.attr('height');
+
+		hight_range = height-40;
+
+		// 5. X scale will use the index of our data
+		var x = d3.scaleLinear().range([height, 0]);
+		var y = d3.scaleTime().range([0, width]);
+
+		var color_list = ['#ffffff', '#fff5f0', '#fee0d2', 	'#fcbba1', 	'#fc9272', 	'#fb6a4a', 	'#ef3b2c', 	'#cb181d', 	'#a50f15', 	'#67000d'];
+		var data_long = [];
+		
+		var title = "Visualizing Earthquake Counts State 2010-2015 (M3+)";
+
+		d3.csv('earthquakes.csv')
+		  .then(function(data) {
+
+			for(var j = 0; j < data.length; j++){
+			  	for(var k = 0; k < 6; k++){
+			   		data_long.push({
+			      		"Year": Object.keys(data[j])[k], 
+			      		"Count": Object.values(data[j])[k], 
+			      		"States": data[j]["States"], 
+			      		"Category": data[j]["Category"]
+			    });
+			  }
+			}
+			var selectValues = d3.set(data_long.map(d=>  d["Category"])).values();
+            //console.table(selectValues[0]);
+			var dropDown = d3.select("#button")
+				.selectAll('strength_button')
+				.data(selectValues.sort())
+          		.attr("x", 5000)
+				.attr("y", -10000)
+				.enter()
+				.append('option')
+				.text(function (d) { return d; }) 
+				.attr("value", function (d) { return d; });
+				
+				
+			var x_vals = d3.set(data_long.map(d=> d["States"])).values();
+			var y_vals = d3.set(data_long.map(d=>  d["Year"])).values();
+
+			//console.log(y_vals)
+			x_valsmax = x_vals.length
+			//console.log(x_valsmax)
+            //console.log(data_long)
+
+			var color = d3.scaleQuantize()
+					.domain(d3.extent(data_long, function(d){return d["Count"]}))
+					.range(color_list);
+			//console.log(color)
+
+			var g = svg.append('g')
+				  .attr('transform', `translate(${margin.left}, ${margin.top})`);
+				  
+			var parseTime = d3.timeParse("%Y");
+
+			var yScale = d3.scaleBand()
+			  	.domain(y_vals.reverse())
+			  	.range([0, hight_range]);
+				//console.log(y_vals)
+			var yAxis = d3.axisLeft(yScale);
+			var yAxisG = g.append('g')
+				.call(yAxis)
+				  .style("text-anchor", "end");
+				  
+			yAxisG.selectAll("text")	
+			    .style("text-anchor", "end")
+				.attr("x", "-10")
+				.attr("y", "0");
+			
+			yAxisG.append('text')
+			  	.attr('class','title')
+			  	.attr('x', width /2)
+			  	.attr('y', -50)
+			  	.attr('text-anchor', 'middle')
+			  	.text(title)
+				.style('font-size', '2.2em')
+				.style('fill', 'black')
+
+		   d3.select("#button")
+				.on("change", function(d){
+
+		    		updateMap(this.value);
+			});			
+		    var selectCategory = data_long.filter(function(d){
+					return d["Category"] == selectValues[0]});
+
+			var tooltip = d3.selectAll("#tooltip")
+				.append("div")
+				.style("opacity", 0)
+				.attr("class", "tooltip")
+				.style("background-color", "white")
+				.style("padding", "5px");
+
+			var mouseover = function(d) {
+				tooltip
+					.style("opacity", 1);
+					d3.select(this)
+			  	.style("stroke", "black")
+			  	.style("opacity", 1);
+			};
+
+			var mousemove = function(d) {
+				tooltip
+			  	.html(d["States"]+" "+ d["Count"])
+			  	.style("left", (d3.mouse(this)[0]+70) + "px")
+			  	.style("top", (d3.mouse(this)[1]) + "px");
+			};
+
+			var mouseleave = function(d) {
+				tooltip
+			  	.style("opacity", 0);
+				d3.select(this)
+			  	.style("stroke", "none")
+			  	.style("opacity", 0.8);
+			};
+
+			//console.log(selectCategory)
+			var x_vals = d3.set(selectCategory.map(d=> d["States"])).values();
+			//console.log(x_vals)
+
+			var xScale = d3.scaleBand()
+			    .domain(x_vals)
+				.range([0, width-x_valsmax]);
+			
+			//console.log(xScale)	
+			var xAxis = d3.axisBottom(xScale);
+
+			var xAxisG = g.append('g')
+				.attr("class", "x axis")
+				.attr("transform", "translate(0," + (hight_range) + ")")
+				.call(d3.axisBottom(xScale))
+				.attr('class','update')
+
+			xAxisG.selectAll("text")	
+				.style("text-anchor", "end")
+				.attr('class','update')
+				.attr("x", "2")
+				.attr("y", "10") // change this///////////////
+			    //.attr("dx", "3em")
+			    //.attr("dy", "3.5em")
+			    .attr("transform", "rotate(-65)")
+				.select(".domain")
+				.attr('class','update');
+
+		    g.selectAll('category').append('g')
+		      	.data(selectCategory)
+				 .enter().append("g")
+				  .append("rect")
+				  //.attr('class','update')
+		    	.attr("x", function(d) { return xScale(d["States"]) + 10})
+		    	.attr("y", function(d) { return yScale(d["Year"]) - 8})
+		    	.attr("rx", 4)
+		   		.attr("ry", 10)
+		    	.attr("width", xScale.bandwidth()-10) // Controls rectangles
+		    	.attr("height", yScale.bandwidth())// Controls rectangles
+		    	.style('fill', function(d){return color(d["Count"])})
+		    	.on("mouseover", mouseover)
+		    	.on("mousemove", mousemove)
+				.on("mouseleave", mouseleave);
+
+			//console.table(heat)
+	 //legend
+	var count_vals = d3.set(selectCategory.map(function(d){return d["Count"]})).values();
+	var count_valsort = count_vals.sort((a, b) => a - b).slice(Math.max(count_vals.length - 9, 1))
+	//console.table(count_vals)
+
+    var legend = g.selectAll("svg")
+          .data(count_valsort);
+    legend.enter().append("g")
+          .attr("class", "HorizontalLegend")
+          .append("rect")
+          .attr("y", 390)
+          .attr("x", function(d, i) {return 200 + 30*i; })
+          .attr("width", 40)
+          .attr("height", 20)
+		  .attr("fill", function(d,i){return color_list[i]})
+		  .text(function(d){ return d})
+		  .attr("text-anchor", "left");
+
+    g.selectAll("svg")
+          .data(count_valsort)
+          .enter().append("g")
+            .append("text")
+  			.attr("y", 385)
+          	.attr("x", function(d, i) {return 200 + 30*i; })
+            .attr("width", 70)
+            .attr("height", 30) 
+            .style("fill", "black")
+            .text(function(d){ return d})
+			.attr("text-anchor", "left");
+			
+			//var updateCategory = data_long.filter(function(d){return d["Category"] == selectValues});
+
+			function updateMap(selectValues){
+				var updateCategory = data_long.filter(function(d){return d["Category"] == selectValues});
+			
+			var y_vals = d3.set(updateCategory.map(d=>  d["Year"])).values();
+				//console.log(updateCategory)
+			var yScale = d3.scaleBand()
+			  	.domain(y_vals.reverse())
+			  	.range([0, hight_range]);
+				//console.log(y_vals)
+			var yAxis = d3.axisLeft(yScale);
+
+				var x_vals = d3.set(updateCategory.map(d=> d["States"])).values();
+				console.log(x_vals)
+				x_valsmax = x_vals.length
+				//console.log(xScale)	
+				//--Remove Svg
+				g.selectAll("g").remove();
+				
+				var xScale = d3.scaleBand()
+					.domain(x_vals)
+					.range([0, width-x_valsmax]);
+				
+				var yAxisG = g.append('g')
+					.call(yAxis)
+				  .style("text-anchor", "end");
+
+				yAxisG.selectAll("text")	
+			    	.style("text-anchor", "end")
+					.attr("x", "-10")
+					.attr("y", "0");
+				yAxisG.append('text')
+			  		.attr('class','title')
+			  		.attr('x', width /2)
+			  		.attr('y', -50)
+			  		.attr('text-anchor', 'middle')
+			  		.text(title)
+					.style('font-size', '2.2em')
+					.style('fill', 'black')
+				var xAxisG = g.append('g')
+					.attr("class", "x axis")
+					.attr("transform", "translate(0," + (hight_range) + ")")
+					.call(d3.axisBottom(xScale))
+
+				xAxisG.selectAll("text")	
+					.style("text-anchor", "end")
+					.attr("x", "2")
+					.attr("y", "10") // 
+					.attr("transform", "rotate(-65)")
+					.select(".domain");
+				//console.log(updateCategory);
+			 g.selectAll('category').append("svg")
+		      	.data(updateCategory)
+			 .enter().append("g")
+				  .append("rect")
+				  //.attr('class','update')
+		    	.attr("x", function(d) { return xScale(d["States"]) + 10})
+		    	.attr("y", function(d) { return yScale(d["Year"]) - 8})
+		    	.attr("rx", 4)
+		   		.attr("ry", 10)
+		    	.attr("width", xScale.bandwidth()-10) // Controls rectangles
+		    	.attr("height", yScale.bandwidth()-5)// Controls rectangles
+		    	.style('fill', function(d){return color(d["Count"])})
+		    	.on("mouseover", mouseover)
+		    	.on("mousemove", mousemove)
+				.on("mouseleave", mouseleave);
+
+	var count_vals = d3.set(updateCategory.map(function(d){return d["Count"]})).values();
+	//console.log(count_vals.sort((a, b) => a - b).slice(Math.max(arr.length - 9, 1)))
+	var count_valsort = count_vals.sort((a, b) => a - b).slice(Math.max(count_vals.length - 9, 1))
+
+    var legend = g.selectAll("svg")
+          .data(count_valsort);
+    legend.enter().append("g")
+          .attr("class", "HorizontalLegend")
+          .append("rect")
+          .attr("y", 390)
+          .attr("x", function(d, i) {return 200 + 27*i; })
+          .attr("width", 40)
+          .attr("height", 20)
+          .attr("fill", function(d,i){return color_list[i]})
+
+    g.selectAll("svg")
+          .data(count_valsort)
+          .enter().append("g")
+            .append("text")
+  			.attr("y", 385)
+          	.attr("x", function(d, i) {return 200 + 35*i; })
+            .attr("width", 70)
+            .attr("height", 30) 
+            .style("fill", "black")
+            .text(function(d){ return d})
+			.attr("text-anchor", "left");		
+			}
+            });
+
+</script>
+</body>
+</html>

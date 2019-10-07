@@ -1,0 +1,48 @@
+body {
+    margin: 0px;
+    overflow: hidden;
+  }
+  
+.line {
+    fill: none;
+    
+    stroke-width: 1;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+    mix-blend-mode: multiply;
+  }
+  
+.tick text {
+    fill: #635F5D;
+  }
+  
+.tick line {
+    stroke: #C0C0BB;
+  }
+  
+  .axis-label {
+    font-size: 5em;
+    fill: #8E8883;
+  }
+  
+  .title {
+    font-size: 2.7em;
+    fill: #635F5D;
+  }
+
+  path {
+    stroke-width: 1;
+    fill: none;
+    stroke: #000;
+  }
+
+  .line {
+    fill: none;
+    stroke-width: 2px;
+  }
+
+  .focus circle {
+    fill: #F1F3F3;
+    stroke: #6F257F;
+    stroke-width: 5px;
+  }

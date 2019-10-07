@@ -1,0 +1,1 @@
+Square root and none linear scales are more apropiate in situations when a lagre outlier is skewing the results.

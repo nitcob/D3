@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html>
+<head> 
+<script src="https://d3js.org/d3.v5.min.js" charset="utf-8"></script>
+<meta charset="utf-8"/>
+
+<style type="text/css">
+.pagebreak { page-break-before: always; }
+path {
+  stroke-width: 2;
+  fill: none;
+  stroke: #000;
+}
+.point {
+				fill:none;
+				size: 2px
+			}
+
+</style>
+</head>
+<div>
+    <svg id="svg" height=100 width=800></svg>
+    <div class="pagebreak"> </div>
+    <!--<svg id="legend" height=100 width=800></svg>
+    <svg id="svg2" height=100 width=800></svg>
+    <svg id="svg3" height=100 width=800></svg> -->
+  </div>
+<body>
+
+<script>
+
+
+var margin = { left:80, right:100, top:40, bottom:100 },
+    height = 500 - margin.top - margin.bottom, 
+    width = 700 - margin.left - margin.right;
+
+var svg = d3.select("#chart-area").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom);
+
+var svg1 = d3.select("#chart-area").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom);
+
+var g = svg.append("g")
+    .attr("transform", "translate(" + margin.left + 
+        ", " + margin.top + ")");
+
+// Time parser for x-scale
+//var parseTimeFormat = d3.parseTime
+var parseTime = d3.timeParse("%Y");
+
+// 5. X scale will use the index of our data
+var x = d3.scaleTime().range([0, width]);
+var y = d3.scaleLinear().range([height, 0]);
+
+//var color = d3.scaleOrdinal(d3.schemeCategory10);
+
+// var xAxis = d3.svg.axis()
+//     .scale(x)
+//     .orient("bottom");
+
+// var yAxis = d3.svg.axis()
+//     .scale(y)
+//     .orient("left");
+
+var data = d3.csv("earthquakes.csv", function(d) {
+              //console.log(data);
+              // Data cleaning
+              return {
+                  year : parseTime(d.year),
+                  '8.0+'  : +d['8.0+'],
+                  '7_7.9' : +d['7_7.9'],
+                  '6_6.9' : +d['6_6.9'],
+                  '5_5.9' : +d['5_5.9'],
+                  'Estimated Deaths' : +d['Estimated Deaths']
+                  //console.log(d);
+                };
+                }).then(
+                  function(data) {
+// 1. Add the SVG to the page and employ #2
+var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+//Header
+svg.append("text")
+        .attr("x", (width / 2))             
+        .attr("y", 0 - (margin.top / 2))
+        .attr("text-anchor", "middle")  
+        .style("font-size", "16px") 
+        .style("text-decoration", "underline")  
+        .text("Worldwide Earthquake Stats 2000-2015");
+
+// 3. Call the x axis in a group tag
+// x.domain(d3.extent(data, function(d) { return d.year; }));
+// y.domain([d3.min(data, function(d) { return d['5_5.9']; }),
+//           d3.max(data, function(d) { return d['5_5.9']; })]);
+
+//var max = data.max();
+
+var x = d3.scaleTime()
+          //.data(data)
+          .domain(d3.extent(data, function(d) { return d.year; }))
+          //.domain(d3.extent(data, function(d) { return d.year; }))
+          .range([0, width]);
+
+//console.log(max)
+var y = d3.scaleLinear()
+          //.data(data)
+          .domain([0, d3.max(data, function(d) { return d['5_5.9']; })])
+          .range([height, 0]);
+
+svg.append("g")
+    .attr("class", "x axis")
+    .attr("transform", "translate(0," + height + ")")
+    .call(d3.axisBottom(x)); // Create an axis component with d3.axisBottom
+
+// text label for the x axis
+svg.append("text")             
+      .attr("transform",
+            "translate(" + (width/2) + " ," + 
+                           (height + margin.top + 20) + ")")
+      .style("text-anchor", "middle")
+      .text("Year");
+    
+
+// 4. Call the y axis in a group tag
+svg.append("g")
+    .attr("class", "y axis")
+    .call(d3.axisLeft(y)); // Create an axis component with d3.axisLeft
+
+ // text label for the y axis
+ svg.append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 0 - margin.left)
+      .attr("x",0 - (height / 2))
+      .attr("dy", "1em")
+      .style("text-anchor", "middle")
+      .text("Number of Earthquakes")
+
+// 9. Append the path, bind the data, and call the line generator
+//5 scale
+var line5 = d3.line()	
+    .x(function(data) { return x(data.year); })
+    .y(function(data) { return y(data['5_5.9']); });
+
+
+svg.append("path")
+    .datum(data) // 10. Binds data to the line 
+    .attr("class", "line") // Assign a class for styling 
+    .attr("d", line5)
+    .style("stroke", "#FFC300"); // 11. Calls the line generator 
+
+//6 scale
+var line6 = d3.line()	
+    .x(function(d) { return x(d.year); })
+    .y(function(d) { return y(d['6_6.9']); }); 
+svg.append("path")
+    .datum(data) // 10. Binds data to the line 
+    .attr("class", "line") // Assign a class for styling 
+    .attr("d", line6)
+    .style("stroke", "#FF5733"); // 11. Calls the line generator
+//7 scale
+var line7 = d3.line()	
+    .x(function(d) { return x(d.year); })
+    .y(function(d) { return y(d['7_7.9']); });    
+svg.append("path")
+    .datum(data) // 10. Binds data to the line 
+    .attr("class", "line") // Assign a class for styling 
+    .attr("d", line7)
+    .style("stroke", "#C70039"); // 11. Calls the line generator
+//8 scale
+var line8 = d3.line()	
+    .x(function(d) { return x(d.year); })
+    .y(function(d) { return y(d['8.0+']); });
+    
+svg.append("path")
+    .datum(data) // 10. Binds data to the line 
+    .attr("class", "line") // Assign a class for styling 
+    .attr("d", line8)
+    .style("stroke", "#900C3F"); // 11. Calls the line generator
+
+//{'5_5.9': '#FFC300', 
+  // '6_6.9': '#FF5733', 
+  // '7_7.9': '#C70039', 
+  //'8.0+': ''#FFC300'}
+
+// legend = svg.append("g")
+//     .attr("class","legend")
+//     .attr("transform","translate(50,30)")
+//     .style("font-size","12px")
+//     .call(d3.legend)
+
+// var legend = svg.selectAll(".legend").data([0,1]).enter().append("g")
+// 							.attr("class", "legend")
+// 							.attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+
+
+
+//Add second svg the SVG to the page and employ---------------------------------- 
+var svg1 = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+//Header
+svg1.append("text")
+        .attr("x", (width / 2))             
+        .attr("y", 0 - (margin.top / 2))
+        .attr("text-anchor", "middle")  
+        .style("font-size", "16px") 
+        .style("text-decoration", "underline")  
+        .text("Worldwide Earthquake Stats 2000-2015");
+//console.log(max)
+svg1.append("g")
+    .attr("class", "x axis")
+    .attr("transform", "translate(0," + height + ")")
+    .call(d3.axisBottom(x)); // Create an axis component with d3.axisBottom
+
+// text label for the x axis
+svg1.append("text")             
+      .attr("transform",
+            "translate(" + (width/2) + " ," + 
+                           (height + margin.top + 20) + ")")
+      .style("text-anchor", "middle")
+      .text("Year");
+svg1.append("g")
+    .attr("class", "y axis")
+    .call(d3.axisLeft(y));   
+ // text label for the y axis
+ svg1.append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 0 - margin.left)
+      .attr("x",0 - (height / 2))
+      .attr("dy", "1em")
+      .style("text-anchor", "middle")
+      .text("Number of Earthquakes")
+ // text label for the y axis
+ svg1.append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 0 - margin.left)
+      .attr("x",0 - (height / 2))
+      .attr("dy", "1em")
+      .style("text-anchor", "middle")
+      .text("Number of Earthquakes")
+// 9. Append the path, bind the data, and call the line generator
+//5 scale
+svg1.append("path")
+    .datum(data) // 10. Binds data to the line 
+    .attr("class", "line") // Assign a class for styling 
+    .attr("d", line5)
+    .style("stroke", "#FFC300"); // 11. Calls the line generator
+var node_radius = d3.scaleSqrt()
+                    .range([4,15])
+                    .domain([d3.min(data, function(d) { return d["Estimated Deaths"]; }), d3.max(data, function(d) { return d["Estimated Deaths"]; })])
+    
+svg1.selectAll(".line")
+    .data(data)
+    .enter().append("circle") // Uses the enter().append() method
+    .attr("class", "dot") // Assign a class for styling
+    .style("fill", "#FFC300")
+    .attr("cx", function(data) { return x(data.year); })
+    .attr("cy", function(data) { return y(data['5_5.9']); })
+    //.attr("r", function(data) { return data["Estimated Deaths"]/20000; })
+    .attr("r", function(d) { return node_radius(d["Estimated Deaths"]);})
+
+
+// var line5 = d3.line()	
+//     .x(function(data) { return x(data.year); })
+//     .y(function(data) { return y(data['5_5.9']); });
+//6 scale
+svg1.append("path")
+    .datum(data) // 10. Binds data to the line 
+    .attr("class", "line") // Assign a class for styling 
+    .attr("d", line6)
+    .style("stroke", "#FF5733"); // 11. Calls the line generator
+
+ svg1.selectAll(".line")
+    .data(data)
+    .enter().append("circle") // Uses the enter().append() method
+    .attr("class", "dot") // Assign a class for styling
+    .style("fill", "#FF5733")
+    .attr("cx", function(data) { return x(data.year); })
+    .attr("cy", function(data) { return y(data['6_6.9']); })
+    .attr("r", function(d) { return node_radius(d["Estimated Deaths"]);})
+
+//7 scale 
+svg1.append("path")
+    .datum(data) // 10. Binds data to the line 
+    .attr("class", "line") // Assign a class for styling 
+    .attr("d", line7)
+    .style("stroke", "#C70039"); // 11. Calls the line generator
+
+svg1.selectAll(".line")
+    .data(data)
+    .enter().append("circle") // Uses the enter().append() method
+    .attr("class", "dot") // Assign a class for styling
+    .style("fill", "#C70039")
+    .attr("cx", function(data) { return x(data.year); })
+    .attr("cy", function(data) { return y(data['7_7.9']); })
+    .attr("r", function(d) { return node_radius(d["Estimated Deaths"]);})
+//8 scale 
+svg1.append("path")
+    .datum(data) // 10. Binds data to the line 
+    .attr("class", "line") // Assign a class for styling 
+    .attr("d", line8)
+    .style("stroke", "#900C3F"); // 11. Calls the line generator
+
+svg1.selectAll(".line")
+    .data(data)
+    .enter().append("circle") // Uses the enter().append() method
+    .attr("class", "dot") // Assign a class for styling
+    .style("fill", "#900C3F")
+    .attr("cx", function(data) { return x(data.year); })
+    .attr("cy", function(data) { return y(data['8.0+']); })
+    .attr("r", function(d) { return node_radius(d["Estimated Deaths"]);})
+
+// 12. Appends a circle for each datapoint 
+// svg2.selectAll(".dot")
+//     .data(dataset)
+//   .enter().append("circle") // Uses the enter().append() method
+//     .attr("class", "dot") // Assign a class for styling
+//     .attr("d", line5)
+//     .attr("r", 5)
+
+//Add third svg the SVG to the page and employ---------------------------------- 
+var svg2 = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+//Header
+svg2.append("text")
+        .attr("x", (width / 2))             
+        .attr("y", 0 - (margin.top / 2))
+        .attr("text-anchor", "middle")  
+        .style("font-size", "16px") 
+        .style("text-decoration", "underline")  
+        .text("Worldwide Earthquake Stats 2000-2015 square root scale");
+//console.log(max)
+svg2.append("g")
+    .attr("class", "x axis")
+    .attr("transform", "translate(0," + height + ")")
+    .call(d3.axisBottom(x)); // Create an axis component with d3.axisBottom
+
+// text label for the x axis
+var y_root = d3.scaleSqrt()
+          //.data(data)
+          .domain([1, d3.max(data, function(d) { return d['5_5.9']; })])
+          .range([height, 0]);
+
+svg2.append("text")             
+      .attr("transform",
+            "translate(" + (width/2) + " ," + 
+                           (height + margin.top + 20) + ")")
+      .style("text-anchor", "middle")
+      .text("Year");
+svg2.append("g")
+    .attr("class", "y axis")
+    .call(d3.axisLeft(y_root));   
+ // text label for the y axis
+ svg2.append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 0 - margin.left)
+      .attr("x",0 - (height / 2))
+      .attr("dy", "1em")
+      .style("text-anchor", "middle")
+      .text("Number of Earthquakes")
+ // text label for the y axis
+ svg2.append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 0 - margin.left)
+      .attr("x",0 - (height / 2))
+      .attr("dy", "1em")
+      .style("text-anchor", "middle")
+      .text("Number of Earthquakes")
+// 9. Append the path, bind the data, and call the line generator
+//5 scale
+var line5_root = d3.line()	
+    .x(function(data) { return x(data.year); })
+    .y(function(data) { return y_root(data['5_5.9']); });
+
+svg2.append("path")
+    .datum(data) // 10. Binds data to the line 
+    .attr("class", "line") // Assign a class for styling 
+    .attr("d", line5_root)
+    .style("stroke", "#FFC300"); // 11. Calls the line generator 
+
+svg2.selectAll(".line")
+    .data(data)
+    .enter().append("circle") // Uses the enter().append() method
+    .attr("class", "dot") // Assign a class for styling
+    .style("fill", "#FFC300")
+    .attr("cx", function(data) { return x(data.year); })
+    .attr("cy", function(data) { return y_root(data['5_5.9']); })
+    .attr("r", function(d) { return node_radius(d["Estimated Deaths"]);})
+//6 scale
+
+var line6_root = d3.line()	
+    .x(function(data) { return x(data.year); })
+    .y(function(data) { return y_root(data['6_6.9']); });
+
+svg2.append("path")
+    .datum(data) // 10. Binds data to the line 
+    .attr("class", "line") // Assign a class for styling 
+    .attr("d", line6_root)
+    .style("stroke", "#FF5733"); // 11. Calls the line generator
+    
+svg2.selectAll(".line")
+    .data(data)
+    .enter().append("circle") // Uses the enter().append() method
+    .attr("class", "dot") // Assign a class for styling
+    .style("fill", "#FF5733")
+    .attr("cx", function(data) { return x(data.year); })
+    .attr("cy", function(data) { return y_root(data['6_6.9']); })
+    .attr("r", function(d) { return node_radius(d["Estimated Deaths"]);})
+    
+//7 scale 
+
+var line7_root = d3.line()	
+    .x(function(data) { return x(data.year); })
+    .y(function(data) { return y_root(data['7_7.9']); });
+
+svg2.append("path")
+    .datum(data) // 10. Binds data to the line 
+    .attr("class", "line") // Assign a class for styling 
+    .attr("d", line7_root)
+    .style("stroke", "#C70039"); // 11. Calls the line generator
+
+svg2.selectAll(".line")
+    .data(data)
+    .enter().append("circle") // Uses the enter().append() method
+    .attr("class", "dot") // Assign a class for styling
+    .style("fill", "#C70039")
+    .attr("cx", function(data) { return x(data.year); })
+    .attr("cy", function(data) { return y_root(data['7_7.9']); })
+    .attr("r", function(d) { return node_radius(d["Estimated Deaths"]);})
+//8 scale
+var line8_root = d3.line()	
+    .x(function(data) { return x(data.year); })
+    .y(function(data) { return y_root(data['8.0+']+2); });
+
+
+svg2.append("path")
+    .datum(data) // 10. Binds data to the line 
+    .attr("class", "line") // Assign a class for styling 
+    .attr("d", line8_root)
+    .style("stroke", "#900C3F"); // 11. Calls the line generator
+
+svg2.selectAll(".line")
+    .data(data)
+    .enter().append("circle") // Uses the enter().append() method
+    .attr("class", "dot") // Assign a class for styling
+    .style("fill", "#900C3F")
+    .attr("cx", function(data) { return x(data.year); })
+    .attr("cy", function(data) { return y_root(data['8.0+']+2); })
+    .attr("r", function(d) { return node_radius(d["Estimated Deaths"]);})
+
+ //Add fourth svg the SVG to the page and employ----------------------------------
+ var svg3 = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+//Header
+svg3.append("text")
+        .attr("x", (width / 2))             
+        .attr("y", 0 - (margin.top / 2))
+        .attr("text-anchor", "middle")  
+        .style("font-size", "16px") 
+        .style("text-decoration", "underline")  
+        .text("Worldwide Earthquake Stats 2000-2015 log scale");
+//console.log(max)
+svg3.append("g")
+    .attr("class", "x axis")
+    .attr("transform", "translate(0," + height + ")")
+    .call(d3.axisBottom(x)); // Create an axis component with d3.axisBottom
+
+// text label for the x axis
+var y_log = d3.scaleLog()
+          //.data(data)
+          .domain([1, d3.max(data, function(d) { return d['5_5.9']; })])
+          .range([height, 0]);
+
+svg3.append("text")             
+      .attr("transform",
+            "translate(" + (width/2) + " ," + 
+                           (height + margin.top + 20) + ")")
+      .style("text-anchor", "middle")
+      .text("Year");
+svg3.append("g")
+    .attr("class", "y axis")
+    .call(d3.axisLeft(y_log));   
+ // text label for the y axis
+ svg3.append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 0 - margin.left)
+      .attr("x",0 - (height / 2))
+      .attr("dy", "1em")
+      .style("text-anchor", "middle")
+      .text("Number of Earthquakes")
+ // text label for the y axis
+ svg3.append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 0 - margin.left)
+      .attr("x",0 - (height / 2))
+      .attr("dy", "1em")
+      .style("text-anchor", "middle")
+      .text("Number of Earthquakes")
+// 9. Append the path, bind the data, and call the line generator
+//5 scale
+var line5_log = d3.line()	
+    .x(function(data) { return x(data.year); })
+    .y(function(data) { return y_log(data['5_5.9']); });
+
+svg3.append("path")
+    .datum(data) // 10. Binds data to the line 
+    .attr("class", "line") // Assign a class for styling 
+    .attr("d", line5_log)
+    .style("stroke", "#FFC300"); // 11. Calls the line generator 
+
+svg3.selectAll(".line")
+    .data(data)
+    .enter().append("circle") // Uses the enter().append() method
+    .attr("class", "dot") // Assign a class for styling
+    .style("fill", "#FFC300")
+    .attr("cx", function(data) { return x(data.year); })
+    .attr("cy", function(data) { return y_log(data['5_5.9']); })
+    .attr("r", function(d) { return node_radius(d["Estimated Deaths"]);})
+//6 scale
+var line6_log = d3.line()	
+    .x(function(data) { return x(data.year); })
+    .y(function(data) { return y_log(data['6_6.9']); });
+
+svg3.append("path")
+    .datum(data) // 10. Binds data to the line 
+    .attr("class", "line") // Assign a class for styling 
+    .attr("d", line6_log)
+    .style("stroke", "#FF5733"); // 11. Calls the line generator
+    
+svg3.selectAll(".line")
+    .data(data)
+    .enter().append("circle") // Uses the enter().append() method
+    .attr("class", "dot") // Assign a class for styling
+    .style("fill", "#FF5733")
+    .attr("cx", function(data) { return x(data.year); })
+    .attr("cy", function(data) { return y_log(data['6_6.9']); })
+    .attr("r", function(d) { return node_radius(d["Estimated Deaths"]);})
+//7 scale 
+
+var line7_log = d3.line()	
+    .x(function(data) { return x(data.year); })
+    .y(function(data) { return y_log(data['7_7.9']); });
+
+svg3.append("path")
+    .datum(data) // 10. Binds data to the line 
+    .attr("class", "line") // Assign a class for styling 
+    .attr("d", line7_log)
+    .style("stroke", "#C70039"); // 11. Calls the line generator
+
+svg3.selectAll(".line")
+    .data(data)
+    .enter().append("circle") // Uses the enter().append() method
+    .attr("class", "dot") // Assign a class for styling
+    .style("fill", "#C70039")
+    .attr("cx", function(data) { return x(data.year); })
+    .attr("cy", function(data) { return y_log(data['7_7.9']); })
+    .attr("r", function(d) { return node_radius(d["Estimated Deaths"]);})
+//8 scale 
+
+var line8_log = d3.line()	
+    .x(function(data) { return x(data.year); })
+    .y(function(data) { return y_log(data['8.0+']+1); });
+
+svg3.append("path")
+    .datum(data) // 10. Binds data to the line 
+    .attr("class", "line") // Assign a class for styling 
+    .attr("d", line8_log)
+    .style("stroke", "#900C3F"); // 11. Calls the line generator
+
+svg3.selectAll(".line")
+    .data(data)
+    .enter().append("circle") // Uses the enter().append() method
+    .attr("class", "dot") // Assign a class for styling
+    .style("fill", "#900C3F")
+    .attr("cx", function(data) { return x(data.year); })
+    .attr("cy", function(data) { return y_log(data['8.0+']+1); })
+    .attr("r", function(d) { return node_radius(d["Estimated Deaths"]);})
+
+//select the svg area
+// var legend = d3.select("svg").append("svg")
+svg.append("circle").attr("cx",width).attr("cy",margin.top).attr("r", 6).style("fill", '#FFC300')
+svg.append("circle").attr("cx",width).attr("cy",margin.top-10).attr("r", 6).style("fill", '#FF5733')
+svg.append("circle").attr("cx",width).attr("cy",margin.top-20).attr("r", 6).style("fill", '#C70039')
+svg.append("circle").attr("cx",width).attr("cy",margin.top-30).attr("r", 6).style("fill", "#900C3F")
+svg.append("text").attr("x", width+20).attr("y", margin.top).text('5_5.9').style("font-size", "12px").attr("alignment-baseline","middle")
+svg.append("text").attr("x", width+20).attr("y", margin.top-10).text('6_6.9').style("font-size", "12px").attr("alignment-baseline","middle")
+svg.append("text").attr("x", width+20).attr("y", margin.top-20).text('7_7.9').style("font-size", "12px").attr("alignment-baseline","middle")
+svg.append("text").attr("x", width+20).attr("y", margin.top-30).text('8.0+').style("font-size",  "12px").attr("alignment-baseline","middle")
+
+svg1.append("circle").attr("cx",width).attr("cy",margin.top).attr("r", 6).style("fill", '#FFC300')
+svg1.append("circle").attr("cx",width).attr("cy",margin.top-10).attr("r", 6).style("fill", '#FF5733')
+svg1.append("circle").attr("cx",width).attr("cy",margin.top-20).attr("r", 6).style("fill", '#C70039')
+svg1.append("circle").attr("cx",width).attr("cy",margin.top-30).attr("r", 6).style("fill", "#900C3F")
+svg1.append("text").attr("x", width+20).attr("y", margin.top).text('5_5.9').style("font-size", "12px").attr("alignment-baseline","middle")
+svg1.append("text").attr("x", width+20).attr("y", margin.top-10).text('6_6.9').style("font-size", "12px").attr("alignment-baseline","middle")
+svg1.append("text").attr("x", width+20).attr("y", margin.top-20).text('7_7.9').style("font-size", "12px").attr("alignment-baseline","middle")
+svg1.append("text").attr("x", width+20).attr("y", margin.top-30).text('8.0+').style("font-size",  "12px").attr("alignment-baseline","middle")
+
+svg2.append("circle").attr("cx",width).attr("cy",margin.top).attr("r", 6).style("fill", '#FFC300')
+svg2.append("circle").attr("cx",width).attr("cy",margin.top-10).attr("r", 6).style("fill", '#FF5733')
+svg2.append("circle").attr("cx",width).attr("cy",margin.top-20).attr("r", 6).style("fill", '#C70039')
+svg2.append("circle").attr("cx",width).attr("cy",margin.top-30).attr("r", 6).style("fill", "#900C3F")
+svg2.append("text").attr("x", width+20).attr("y", margin.top).text('5_5.9').style("font-size", "12px").attr("alignment-baseline","middle")
+svg2.append("text").attr("x", width+20).attr("y", margin.top-10).text('6_6.9').style("font-size", "12px").attr("alignment-baseline","middle")
+svg2.append("text").attr("x", width+20).attr("y", margin.top-20).text('7_7.9').style("font-size", "12px").attr("alignment-baseline","middle")
+svg2.append("text").attr("x", width+20).attr("y", margin.top-30).text('8.0+').style("font-size",  "12px").attr("alignment-baseline","middle")
+
+svg3.append("circle").attr("cx",width).attr("cy",margin.top-35).attr("r", 6).style("fill", '#FFC300')
+svg3.append("circle").attr("cx",width).attr("cy",margin.top-45).attr("r", 6).style("fill", '#FF5733')
+svg3.append("circle").attr("cx",width).attr("cy",margin.top-55).attr("r", 6).style("fill", '#C70039')
+svg3.append("circle").attr("cx",width).attr("cy",margin.top-65).attr("r", 6).style("fill", "#900C3F")
+svg3.append("text").attr("x", width+20).attr("y", margin.top-35).text('5_5.9').style("font-size", "12px").attr("alignment-baseline","middle")
+svg3.append("text").attr("x", width+20).attr("y", margin.top-45).text('6_6.9').style("font-size", "12px").attr("alignment-baseline","middle")
+svg3.append("text").attr("x", width+20).attr("y", margin.top-55).text('7_7.9').style("font-size", "12px").attr("alignment-baseline","middle")
+svg3.append("text").attr("x", width+20).attr("y", margin.top-65).text('8.0+').style("font-size",  "12px").attr("alignment-baseline","middle")
+
+    ;});
+</script>
+</body>
+</html>
